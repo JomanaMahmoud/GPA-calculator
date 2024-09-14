@@ -13,11 +13,18 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.ArrayList;
+
 public class MainActivity extends AppCompatActivity {
     private LinearLayout coursesBox;
     private Button addCourseButton;
     private Button calculate;
     private TextView GPA;
+    private HashMap<String, Integer> databaseCreditHours = new HashMap<>();
+    private HashMap<String, Float> databaseGPA = new HashMap<>();
+    private ArrayList<LinearLayout> courseLayouts = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,46 +42,92 @@ public class MainActivity extends AppCompatActivity {
         calculate = findViewById(R.id.calculateGPA);
         GPA = findViewById(R.id.GPA);
 
-        addCourseButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        addCourseButton.setOnClickListener(v -> {
+            LinearLayout courseData = new LinearLayout(MainActivity.this);
+            courseData.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            layoutParams.setMargins(10, 0, 10, 0);
 
-                LinearLayout courseData = new LinearLayout(MainActivity.this);
-                courseData.setOrientation(LinearLayout.HORIZONTAL);
-                LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                layoutParams.setMargins(10, 0, 10, 0);
+            EditText courseName = new EditText(MainActivity.this);
+            courseName.setHint("Course Name");
+            courseName.setLayoutParams(layoutParams);
 
+            EditText creditHours = new EditText(MainActivity.this);
+            creditHours.setHint("Credit Hours");
+            creditHours.setLayoutParams(layoutParams);
 
-                EditText courseName = new EditText(MainActivity.this);
-                courseName.setHint("Course Name");
-                courseName.setLayoutParams(layoutParams);
+            EditText gpa = new EditText(MainActivity.this);
+            gpa.setHint("GPA");
+            gpa.setLayoutParams(layoutParams);
 
-                EditText creditHours = new EditText(MainActivity.this);
-                creditHours.setHint("Credit Hours");
-                creditHours.setLayoutParams(layoutParams);
+            Button deleteCourse = new Button(MainActivity.this);
+            deleteCourse.setText("Delete");
 
-                EditText gpa = new EditText(MainActivity.this);
-                gpa.setHint("GPA");
-                gpa.setLayoutParams(layoutParams);
+            courseData.addView(courseName);
+            courseData.addView(creditHours);
+            courseData.addView(gpa);
+            courseData.addView(deleteCourse);
+            coursesBox.addView(courseData);
+            courseLayouts.add(courseData);
 
-                Button deleteCourse = new Button(MainActivity.this);
-                deleteCourse.setText("Delete");
+            deleteCourse.setOnClickListener(v1 -> {
+                coursesBox.removeView(courseData);
+                courseLayouts.remove(courseData);
 
-                courseData.addView(courseName);
-                courseData.addView(creditHours);
-                courseData.addView(gpa);
-                courseData.addView(deleteCourse);
-                coursesBox.addView(courseData);
+                // Remove associated data from HashMaps
+                String courseNameText = ((EditText) courseData.getChildAt(0)).getText().toString();
+                databaseCreditHours.remove(courseNameText);
+                databaseGPA.remove(courseNameText);
+            });
+        });
 
-                deleteCourse.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        // Remove the course row from the parent layout
-                        coursesBox.removeView(courseData);
+        calculate.setOnClickListener(v -> {
+            // Clear previous data
+            databaseCreditHours.clear();
+            databaseGPA.clear();
+
+            // Extract data from all course views
+            for (LinearLayout courseData : courseLayouts) {
+                EditText courseName = (EditText) courseData.getChildAt(0);
+                EditText creditHours = (EditText) courseData.getChildAt(1);
+                EditText gpa = (EditText) courseData.getChildAt(2);
+
+                String courseNameText = courseName.getText().toString();
+                String credHoursText = creditHours.getText().toString();
+                String gpaText = gpa.getText().toString();
+
+                try {
+                    if (!courseNameText.isEmpty() && !credHoursText.isEmpty() && !gpaText.isEmpty()) {
+                        int creditHoursValue = Integer.parseInt(credHoursText);
+                        float gpaValue = Float.parseFloat(gpaText);
+
+                        databaseCreditHours.put(courseNameText, creditHoursValue);
+                        databaseGPA.put(courseNameText, gpaValue);
                     }
-                });
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            float totalNumberOfCreditHours = 0;
+            float creditTimesGPA = 0;
+
+            // Calculate total credit hours and weighted GPA
+            for (Map.Entry<String, Integer> entry : databaseCreditHours.entrySet()) {
+                totalNumberOfCreditHours += entry.getValue();
+            }
+
+            for (Map.Entry<String, Integer> entry : databaseCreditHours.entrySet()) {
+                creditTimesGPA += databaseGPA.get(entry.getKey()) * entry.getValue();
+            }
+
+            if (totalNumberOfCreditHours > 0) {
+                float finalGPA = creditTimesGPA / totalNumberOfCreditHours;
+                GPA.setText(String.format("Your GPA is %.2f", finalGPA));
+            } else {
+                GPA.setText("No courses added.");
             }
         });
     }
-
 }
