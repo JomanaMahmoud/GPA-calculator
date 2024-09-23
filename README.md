@@ -1,7 +1,5 @@
 # GPA Calculator Android App
 
-#### Video Demo:(https://youtu.be/IehNQwQxgRA)
-
 #### Description:
 The GPA Calculator is a comprehensive Android application designed to help users calculate their Grade Point Average (GPA) with ease. This app offers a dynamic and user-friendly interface that allows for the addition and management of multiple courses. Users can input course details, calculate their GPA, and remove courses as needed. The application's flexible design ensures that it adapts to user interactions, providing a seamless experience.
 
